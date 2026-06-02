@@ -75,10 +75,10 @@ python downstream/algorithmic_tasks/experiment_stream.py \
 If you find this work useful, please cite our paper:
 
 ```bibtex
-@article{jiang2025proceduralpretraining,
+@inproceedings{jiang2026proceduralpretraining,
   title={Procedural Pretraining: Warming Up Language Models with Abstract Data},
   author={Jiang, Liangze and Shinnick, Zachary and van den Hengel, Anton and Saratchandran, Hemanth and Teney, Damien},
-  journal={arXiv preprint arXiv:2601.21725},
+  booktitle={Proceedings of the International Conference on Machine Learning (ICML)},
   year={2026},
 }
 
