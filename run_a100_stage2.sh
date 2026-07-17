@@ -5,8 +5,9 @@
 # e.g. len64/set-64-12_12_768-2501steps/pytorch_model_1_step2500.pth,
 # which the flat glob in run_a100.sh misses).
 #
-# Same batch settings as run_a100.sh: bsz 32 x grad accum 1 = effective
-# batch 32 sequences, identical to the reference bsz 4 x accum 8.
+# bsz 16 x grad accum 2 = effective batch 32 sequences, identical to the
+# reference bsz 4 x accum 8. (bsz 32 OOMs on 80GB: the fp32 cross-entropy
+# over the 50k vocab needs a ~12GB logits tensor on top of ~69GB steady state.)
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -22,5 +23,6 @@ echo "== Stage 2: C4 pretraining =="
 python downstream/semantic/c4.py \
     --config "$C4_CONFIG" \
     --pretrained_path "$CKPT" \
-    --bsz 32 \
-    --gradient_accumulation_steps 1
+    --wandb_name set_to_c4 \
+    --bsz 16 \
+    --gradient_accumulation_steps 2
