@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Chains the two default stages of the repo on a 2-GPU machine:
-#   1. Procedural pretraining on the `set` task (single GPU — the training
-#      code has no multi-GPU support, and the stage only takes minutes).
-#   2. Standard C4 pretraining from that checkpoint, on 2 GPUs via torchrun.
+# Chains the two default stages of the repo on a single A100 80GB:
+#   1. Procedural pretraining on the `set` task (stock config).
+#   2. Standard C4 pretraining from that checkpoint.
 #
 # Everything uses the stock configs. The only deviation from the default
-# single-GPU C4 run: gradient_accumulation_steps is halved (8 -> 4) so that
-# the effective batch stays at 2 GPUs x bsz 4 x accum 4 = 32 sequences,
-# identical to the reference setup.
+# C4 run: the per-device batch is raised 4 -> 32 and gradient accumulation
+# lowered 8 -> 1. The effective batch is unchanged (32 sequences), so the
+# optimization trajectory matches the reference setup — this just trades
+# accumulation overhead for one large batch, which an 80GB card fits easily.
 #
 # Requirements before running:
 #   pip install -r requirements.txt
@@ -30,17 +30,18 @@ if [ ! -d "$C4_DATA_DIR" ]; then
         --c4_samples 100000
 fi
 
-# --- Stage 1: procedural pretraining (GPU 0) ---
-echo "== Stage 1: procedural pretraining (set task, single GPU) =="
-CUDA_VISIBLE_DEVICES=0 python -m procedural_pretraining.cli --config "$PROC_CONFIG"
+# --- Stage 1: procedural pretraining ---
+echo "== Stage 1: procedural pretraining (set task) =="
+python -m procedural_pretraining.cli --config "$PROC_CONFIG"
 
 # Latest checkpoint by step number (pytorch_model_<epoch>_step<step>.pth)
 CKPT=$(ls -1 "$PROC_SAVE_DIR"/pytorch_model_*_step*.pth | sort -V | tail -1)
 echo "== Stage 1 checkpoint: $CKPT =="
 
-# --- Stage 2: C4 pretraining (2 GPUs) ---
-echo "== Stage 2: C4 pretraining on 2 GPUs =="
-torchrun --nproc_per_node 2 downstream/semantic/c4.py \
+# --- Stage 2: C4 pretraining ---
+echo "== Stage 2: C4 pretraining =="
+python downstream/semantic/c4.py \
     --config "$C4_CONFIG" \
     --pretrained_path "$CKPT" \
-    --gradient_accumulation_steps 4
+    --bsz 32 \
+    --gradient_accumulation_steps 1
