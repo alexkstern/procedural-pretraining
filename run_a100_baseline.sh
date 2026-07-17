@@ -13,6 +13,7 @@ C4_CONFIG=downstream/semantic/configs/c4.yaml
 echo "== Baseline: C4 pretraining from scratch =="
 python downstream/semantic/c4.py \
     --config "$C4_CONFIG" \
+    --wandb_project procedural_pretraining \
     --wandb_name c4_baseline \
     --output_dir output/c4_baseline \
     --bsz 16 \

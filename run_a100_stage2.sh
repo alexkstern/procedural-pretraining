@@ -23,6 +23,7 @@ echo "== Stage 2: C4 pretraining =="
 python downstream/semantic/c4.py \
     --config "$C4_CONFIG" \
     --pretrained_path "$CKPT" \
+    --wandb_project procedural_pretraining \
     --wandb_name set_to_c4 \
     --bsz 16 \
     --gradient_accumulation_steps 2
