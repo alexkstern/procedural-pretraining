@@ -30,20 +30,12 @@ if [ ! -d "$C4_DATA_DIR" ]; then
         --c4_samples 100000
 fi
 
-# --- Stage 1: procedural pretraining (skipped if a checkpoint already exists) ---
-# Checkpoints land in a run-named subdirectory of save_dir,
-# e.g. len64/set-64-12_12_768-2501steps/pytorch_model_1_step2500.pth
-find_ckpt() {
-    find "$PROC_SAVE_DIR" -name 'pytorch_model_*_step*.pth' 2>/dev/null | sort -V | tail -1
-}
+# --- Stage 1: procedural pretraining ---
+echo "== Stage 1: procedural pretraining (set task) =="
+python -m procedural_pretraining.cli --config "$PROC_CONFIG"
 
-CKPT=$(find_ckpt)
-if [ -z "$CKPT" ]; then
-    echo "== Stage 1: procedural pretraining (set task) =="
-    python -m procedural_pretraining.cli --config "$PROC_CONFIG"
-    CKPT=$(find_ckpt)
-fi
-[ -n "$CKPT" ] || { echo "No stage-1 checkpoint found under $PROC_SAVE_DIR" >&2; exit 1; }
+# Latest checkpoint by step number (pytorch_model_<epoch>_step<step>.pth)
+CKPT=$(ls -1 "$PROC_SAVE_DIR"/pytorch_model_*_step*.pth | sort -V | tail -1)
 echo "== Stage 1 checkpoint: $CKPT =="
 
 # --- Stage 2: C4 pretraining ---
